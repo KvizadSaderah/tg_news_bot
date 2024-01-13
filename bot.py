@@ -3,6 +3,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from dotenv import load_dotenv
 import os
+from config import RSS_URL
+from rss_parser import parse_rss
 
 # Загрузка конфигурации из .env файла
 load_dotenv()
@@ -29,6 +31,14 @@ async def send_news(message: types.Message):
 async def main():
     # Запуск бота
     await dp.start_polling(bot)
+
+@router.message(Command(commands=['news']))
+async def send_news(message: types.Message):
+    # Получение новостей из RSS-ленты
+    news_items = parse_rss(RSS_URL)
+    # Отправка новостей пользователю
+    for item in news_items[:5]:  # Ограничение количества новостей
+        await message.answer(f"{item['title']}\n{item['link']}")
 
 if __name__ == '__main__':
     asyncio.run(main())

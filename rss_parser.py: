@@ -1,0 +1,13 @@
+import feedparser
+
+def parse_rss(url):
+    feed = feedparser.parse(url)
+    news_items = []
+    for entry in feed.entries:
+        news_items.append({
+            "title": entry.title,
+            "link": entry.link,
+            "published": entry.published
+        })
+    return news_items
+
