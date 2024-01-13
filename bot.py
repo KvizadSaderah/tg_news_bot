@@ -11,18 +11,17 @@ API_TOKEN = os.getenv('TELEGRAM_API_TOKEN')
 # Инициализация бота
 bot = Bot(token=API_TOKEN)
 
-# Создание диспетчера и роутера
+# Создание диспетчера
 dp = Dispatcher()
-router = dp.router()
 
-@router.message(Command(commands=['start', 'help']))
+@dp.message(Command(commands=['start', 'help']))
 async def send_welcome(message: types.Message):
     """
     Этот хендлер будет вызван, когда пользователь отправит команду /start или /help
     """
     await message.answer("Привет! Я бот, который предоставляет новости. Отправьте мне команду /news, чтобы получить последние новости.")
 
-@router.message(Command(commands=['news']))
+@dp.message(Command(commands=['news']))
 async def send_news(message: types.Message):
     # Здесь будет логика для получения и отправки новостей
     await message.answer("Здесь будет список последних новостей.")
