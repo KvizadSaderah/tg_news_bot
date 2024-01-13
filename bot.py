@@ -3,6 +3,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from dotenv import load_dotenv
 import os
+from rss_parser import load_rss_sources, get_all_news
 
 # Загрузка конфигурации из .env файла
 load_dotenv()
@@ -23,8 +24,11 @@ async def send_welcome(message: types.Message):
 
 @dp.message(Command(commands=['news']))
 async def send_news(message: types.Message):
-    # Здесь будет логика для получения и отправки новостей
-    await message.answer("Здесь будет список последних новостей.")
+    # Получение и отправка новостей
+    RSS_URLS = load_rss_sources('rss_sources.json')
+    news_items = get_all_news(RSS_URLS)
+    for item in news_items[:5]:  # Ограничение количества новостей для отправки
+        await message.answer(f"{item['title']}\n{item['link']}")
 
 async def main():
     # Запуск бота
@@ -32,4 +36,3 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-
