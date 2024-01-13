@@ -1,7 +1,6 @@
 import logging
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.utils.executor import start_polling
 from dotenv import load_dotenv
 import os
@@ -16,7 +15,6 @@ logging.basicConfig(level=logging.INFO)
 # Инициализация бота и диспетчера
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
-dp.middleware.setup(LoggingMiddleware())
 
 @dp.message_handler(commands=['start', 'help'])
 async def send_welcome(message: Message):
