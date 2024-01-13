@@ -1,5 +1,5 @@
 import asyncio
-from aiogram import Bot, Router, types
+from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from dotenv import load_dotenv
 import os
@@ -8,9 +8,12 @@ import os
 load_dotenv()
 API_TOKEN = os.getenv('TELEGRAM_API_TOKEN')
 
-# Инициализация бота и роутера
+# Инициализация бота
 bot = Bot(token=API_TOKEN)
-router = Router()
+
+# Создание диспетчера и роутера
+dp = Dispatcher()
+router = dp.router()
 
 @router.message(Command(commands=['start', 'help']))
 async def send_welcome(message: types.Message):
@@ -25,10 +28,8 @@ async def send_news(message: types.Message):
     await message.answer("Здесь будет список последних новостей.")
 
 async def main():
-    # Привязка роутера к боту
-    bot['router'] = router
     # Запуск бота
-    await bot.start_polling()
+    await dp.start_polling(bot)
 
 if __name__ == '__main__':
     asyncio.run(main())
