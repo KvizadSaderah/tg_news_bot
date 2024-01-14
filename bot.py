@@ -27,26 +27,51 @@ dp = Dispatcher()
 
 user_states = {}  # Словарь для хранения позиции каждого пользователя
 
+
 @dp.message(Command(commands=['start', 'help']))
 async def send_welcome(message: types.Message):
     logger.info("Обработка команды /start или /help")
-    await message.answer("Привет! Я бот, который предоставляет новости. Отправьте мне команду /news, чтобы получить последние новости.")
+    await message.answer(
+        "Привет! Я бот, который предоставляет новости. "
+        "Отправьте мне команду /news, чтобы получить последние новости. "
+        "Используйте команду /more для получения дополнительных новостей."
+    )
+
 
 @dp.message(Command(commands=['news']))
-async def show_news(message, user_id):
-    RSS_URLS = load_rss_sources('rss_sources.json')
-    news_items = get_all_news(RSS_URLS)
+async def send_news(message: types.Message):
+    user_id = message.from_user.id
+    user_states[user_id] = 0  # Начальная позиция для новых запросов новостей
+    await show_news(message, user_id)
 
-    if start >= len(news_items):
-        await message.answer("Больше новостей нет.")
-        user_states[user_id] = 0  # Сброс позиции пользователя
+
+@dp.message(Command(commands=['more']))
+async def send_more_news(message: types.Message):
+    user_id = message.from_user.id
+    if user_id not in user_states:
+        await message.answer("Сначала введите команду /news.")
         return
+    await show_news(message, user_id)
 
-    end = min(start + 5, len(news_items))
-    for item in news_items[start:end]:
-        await message.answer(f"{item['title']}\n{item['link']}")
 
-    user_states[user_id] = end  # Обновление позиции пользователя
+async def show_news(message, user_id):
+    try:
+        start = user_states[user_id]
+        RSS_URLS = load_rss_sources('rss_sources.json')
+        news_items = get_all_news(RSS_URLS)
+
+        if start >= len(news_items):
+            await message.answer("Больше новостей нет.")
+            user_states[user_id] = 0  # Сброс позиции пользователя
+            return
+
+        end = min(start + 5, len(news_items))
+        for item in news_items[start:end]:
+            await message.answer(f"{item['title']}\n{item['link']}")
+        user_states[user_id] = end  # Обновление позиции пользователя
+    except Exception as e:
+        logger.exception(f"Ошибка при обработке команды /news или /more: {e}")
+
 
 async def main():
     logger.info("Запуск бота")
@@ -54,6 +79,7 @@ async def main():
         await dp.start_polling(bot)
     except Exception as e:
         logger.exception(f"Ошибка при запуске бота: {e}")
+
 
 if __name__ == '__main__':
     asyncio.run(main())
