@@ -42,12 +42,14 @@ async def send_news(message: types.Message):
             await message.answer("Новостей пока нет.")
             return
 
-        for item in news_items[:5]:  # Ограничение количества новостей для отправки
+        # Отправка новостей
+        for item in news_items[:5]:
             await message.answer(f"{item['title']}\n{item['link']}")
         logger.info(f"Отправлено {min(len(news_items), 5)} новостей.")
     except Exception as e:
         logger.exception(f"Произошла ошибка при обработке команды /news: {e}")
         await message.answer("Извините, произошла ошибка.")
+
 
 async def main():
     logger.info("Запуск бота")
