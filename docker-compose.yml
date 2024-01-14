@@ -5,3 +5,4 @@ services:
     build: .
     environment:
       - TELEGRAM_API_TOKEN=${TELEGRAM_API_TOKEN}
+    restart: always
