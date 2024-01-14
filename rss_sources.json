@@ -1,5 +1,3 @@
-[
-    "http://example.com/rss",
-    "http://example2.com/rss"
-]
-
+{
+  "Meduza": "https://meduza.io/rss/all"
+}
