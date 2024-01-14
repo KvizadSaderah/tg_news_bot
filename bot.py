@@ -25,31 +25,28 @@ bot = Bot(token=API_TOKEN)
 # Создание диспетчера
 dp = Dispatcher()
 
+user_states = {}  # Словарь для хранения позиции каждого пользователя
+
 @dp.message(Command(commands=['start', 'help']))
 async def send_welcome(message: types.Message):
     logger.info("Обработка команды /start или /help")
     await message.answer("Привет! Я бот, который предоставляет новости. Отправьте мне команду /news, чтобы получить последние новости.")
 
 @dp.message(Command(commands=['news']))
-async def send_news(message: types.Message):
-    logger.info("Обработка команды /news")
-    try:
-        RSS_URLS = load_rss_sources('rss_sources.json')
-        logger.info(f"Загруженные RSS-источники: {RSS_URLS}")
-        news_items = get_all_news(RSS_URLS)
-        if not news_items:
-            logger.warning("Новости не были получены.")
-            await message.answer("Новостей пока нет.")
-            return
+async def show_news(message, user_id):
+    RSS_URLS = load_rss_sources('rss_sources.json')
+    news_items = get_all_news(RSS_URLS)
 
-        # Отправка новостей
-        for item in news_items[:5]:
-            await message.answer(f"{item['title']}\n{item['link']}")
-        logger.info(f"Отправлено {min(len(news_items), 5)} новостей.")
-    except Exception as e:
-        logger.exception(f"Произошла ошибка при обработке команды /news: {e}")
-        await message.answer("Извините, произошла ошибка.")
+    if start >= len(news_items):
+        await message.answer("Больше новостей нет.")
+        user_states[user_id] = 0  # Сброс позиции пользователя
+        return
 
+    end = min(start + 5, len(news_items))
+    for item in news_items[start:end]:
+        await message.answer(f"{item['title']}\n{item['link']}")
+
+    user_states[user_id] = end  # Обновление позиции пользователя
 
 async def main():
     logger.info("Запуск бота")
