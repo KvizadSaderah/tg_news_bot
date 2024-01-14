@@ -9,7 +9,7 @@ tg_news_bot.iml
 vsc.xml
 # C extensions
 *.so
-
+*idea
 # Distribution / packaging
 .Python
 build/
