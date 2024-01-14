@@ -2,7 +2,11 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+misc.mxl
+modules.xml
+profiles_settigs.xml
+tg_news_bot.iml
+vsc.xml
 # C extensions
 *.so
 
