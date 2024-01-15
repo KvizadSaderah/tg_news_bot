@@ -1,6 +1,7 @@
 import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
+from aiogram.dispatcher.filters import Text
 from dotenv import load_dotenv
 import os
 from rss_parser import load_rss_sources, get_all_news
@@ -44,10 +45,14 @@ async def send_sources(message: types.Message):
     sources = "\n".join([f"/{source}" for source in RSS_URLS.keys()])
     await message.answer("Доступные источники новостей:\n" + sources)
 
-async def show_news_from_source(message, user_id, source):
+async def show_news_from_source(message, user_id, source_key):
     try:
-        start, source_key = user_states[user_id]
+        start, _ = user_states[user_id]
         RSS_URLS = load_rss_sources('rss_sources.json')
+        if source_key not in RSS_URLS:
+            await message.answer(f"Источник '{source_key}' не найден.")
+            return
+
         news_items = get_all_news({source_key: RSS_URLS[source_key]})
 
         if start >= len(news_items):
@@ -61,7 +66,8 @@ async def show_news_from_source(message, user_id, source):
 
         user_states[user_id] = (end, source_key)  # Обновление позиции
     except Exception as e:
-        logger.exception(f"Ошибка при обработке команды /{source}: {e}")
+        logger.exception(f"Ошибка при обработке команды /{source_key}: {e}")
+
 
 @dp.message(Command(commands=['news']))
 async def send_news(message: types.Message):
@@ -112,6 +118,19 @@ async def dynamic_source_command(message: types.Message):
     source_key = message.text[1:]  # Удаление слеша и получение имени источника
     user_states[user_id] = (0, source_key)  # Обновление состояния пользователя с новым источником
     await show_news(message, user_id)
+
+@dp.message_handler(Text(startswith='/'))
+async def dynamic_source_command(message: types.Message):
+    command = message.text[1:]  # Удаляем начальный слеш
+    RSS_URLS = load_rss_sources('rss_sources.json')
+
+    # Проверяем, является ли команда именем источника
+    if command in RSS_URLS.keys():
+        user_id = message.from_user.id
+        user_states[user_id] = (0, command)  # Обновляем состояние пользователя
+        await show_news_from_source(message, user_id, command)
+    else:
+        await message.answer("Неизвестная команда.")
 
 
 
