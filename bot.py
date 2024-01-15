@@ -81,7 +81,7 @@ async def send_more_news(message: types.Message):
     _, source = user_states[user_id]
     await show_news_from_source(message, user_id, source)
 
-@dp.message_handler(filters.RegexpCommandsFilter(regexp_commands=[r'(\w+)']))
+@dp.message(filters.RegexpCommandsFilter(regexp_commands=[r'(\w+)']))
 async def dynamic_source_command(message: types.Message):
     command = message.text[1:]  # Remove the starting '/'
     RSS_URLS = load_rss_sources('rss_sources.json')
