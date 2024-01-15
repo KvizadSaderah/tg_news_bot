@@ -52,7 +52,8 @@ async def set_source(message: types.Message):
     logger.info(f"Received command: {command_text}")  # Логируем полученную команду
 
     try:
-        source_key = command_text.split('_')[1]  # Извлекаем ключ источника новостей
+        # Используем разделение строки, чтобы получить имя источника
+        source_key = '_'.join(command_text.split('_')[1:])
         logger.info(f"Extracted source key: {source_key}")  # Логируем извлечённый ключ
 
         RSS_URLS = load_rss_sources('rss_sources.json')
@@ -64,6 +65,7 @@ async def set_source(message: types.Message):
     except Exception as e:
         logger.error(f"Error in set_source: {e}")
         await message.answer("Произошла ошибка при обработке команды.")
+
 
 @dp.message_handler(lambda message: message.text.startswith('/source_'))
 @dp.message_handler(lambda message: message.text.startswith('/source_'))
