@@ -45,7 +45,7 @@ async def send_sources(message: types.Message):
     await message.answer("Доступные источники новостей:\n" + sources)
 
 
-@dp.message_handler(lambda message: message.text.startswith('/source_'))
+@dp.message(lambda message: message.text.startswith('/source_'))
 async def set_source(message: types.Message):
     user_id = message.from_user.id
     command_text = message.text
