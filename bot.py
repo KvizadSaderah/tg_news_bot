@@ -27,6 +27,7 @@ dp = Dispatcher()
 
 user_states = {}  # Словарь для хранения позиции каждого пользователя
 
+
 @dp.message(Command(commands=['start', 'help']))
 async def send_welcome(message: types.Message):
     logger.info("Обработка команды /start или /help")
@@ -36,18 +37,59 @@ async def send_welcome(message: types.Message):
         "Используйте команду /more для получения дополнительных новостей."
     )
 
+
 @dp.message(Command(commands=['source']))
 async def send_sources(message: types.Message):
     RSS_URLS = load_rss_sources('rss_sources.json')
     sources = "\n".join([f"/{source}" for source in RSS_URLS.keys()])
     await message.answer("Доступные источники новостей:\n" + sources)
 
-async def show_news_from_source(message, user_id, source_key):
+async def show_news_from_source(message, user_id, source):
     try:
-        start, _ = user_states[user_id]
+        start, source_key = user_states.get(user_id, (0, None))
+        if not source_key:
+            await message.answer("Сначала выберите источник новостей.")
+            return
+
         RSS_URLS = load_rss_sources('rss_sources.json')
         if source_key not in RSS_URLS:
-            await message.answer(f"Источник '{source_key}' не найден.")
+            await message.answer("Выбранный источник новостей не найден.")
+            return
+
+        # Продолжаем как раньше...
+    except Exception as e:
+        logger.exception(f"Ошибка при обработке команды /{source}: {e}")
+
+
+@dp.message(Command(commands=['news']))
+async def send_news(message: types.Message):
+    user_id = message.from_user.id
+    user_states[user_id] = 0  # Начальная позиция для новых запросов новостей
+    await show_news(message, user_id)
+
+
+@dp.message(Command(commands=['more']))
+async def send_more_news(message: types.Message):
+    user_id = message.from_user.id
+    if user_id not in user_states:
+        await message.answer("Сначала выберите источник новостей с помощью команды /имя_источника.")
+        return
+
+    _, source = user_states[user_id]
+    await show_news_from_source(message, user_id, source)
+
+
+
+async def show_news(message, user_id):
+    try:
+        start, source_key = user_states.get(user_id, (0, None))
+        if not source_key:
+            await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
+            return
+
+        RSS_URLS = load_rss_sources('rss_sources.json')
+        if source_key not in RSS_URLS:
+            await message.answer("Выбранный источник новостей не найден.")
             return
 
         news_items = get_all_news({source_key: RSS_URLS[source_key]})
@@ -63,35 +105,8 @@ async def show_news_from_source(message, user_id, source_key):
 
         user_states[user_id] = (end, source_key)  # Обновление позиции
     except Exception as e:
-        logger.exception(f"Ошибка при обработке команды /{source_key}: {e}")
+        logger.exception(f"Ошибка при обработке команды /news: {e}")
 
-@dp.message(Command(commands=['news']))
-async def send_news(message: types.Message):
-    user_id = message.from_user.id
-    user_states[user_id] = (0, 'Meduza')  # Начальная позиция и источник по умолчанию для новых запросов новостей
-    await show_news_from_source(message, user_id, 'Meduza')
-
-@dp.message(Command(commands=['more']))
-async def send_more_news(message: types.Message):
-    user_id = message.from_user.id
-    if user_id not in user_states:
-        await message.answer("Сначала выберите источник новостей с помощью команды /имя_источника.")
-        return
-
-    _, source_key = user_states[user_id]
-    await show_news_from_source(message, user_id, source_key)
-
-@dp.message(Command(commands=['dynamic']))
-async def dynamic_source_command(message: types.Message):
-    command = message.get_command()[1:]  # Получаем команду без начального '/'
-    RSS_URLS = load_rss_sources('rss_sources.json')
-
-    if command in RSS_URLS:
-        user_id = message.from_user.id
-        user_states[user_id] = (0, command)  # Устанавливаем начальное состояние для этого пользователя и источника
-        await show_news_from_source(message, user_id, command)
-    else:
-        await message.answer("Неизвестная команда или источник новостей.")
 
 
 async def main():
@@ -100,6 +115,7 @@ async def main():
         await dp.start_polling(bot)
     except Exception as e:
         logger.exception(f"Ошибка при запуске бота: {e}")
+
 
 if __name__ == '__main__':
     asyncio.run(main())
