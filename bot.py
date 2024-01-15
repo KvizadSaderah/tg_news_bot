@@ -1,10 +1,10 @@
 import asyncio
-from aiogram import Bot, Dispatcher, types
-from aiogram.dispatcher.filters import Command
+from aiogram import Bot, Dispatcher, types, filters
 from dotenv import load_dotenv
 import os
 from rss_parser import load_rss_sources, get_all_news
 import logging
+
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -111,7 +111,7 @@ async def show_news(message, user_id):
         logger.exception(f"Ошибка при обработке команды /news: {e}")
 
 
-@dp.message_handler(lambda message: message.text.startswith('/'))
+@dp.message_handler(filters.RegexpCommandsFilter(regexp_commands=[r'(\w+)']))
 async def dynamic_source_command(message: types.Message):
     command = message.text[1:]  # Remove the starting '/'
     RSS_URLS = load_rss_sources('rss_sources.json')
@@ -122,8 +122,6 @@ async def dynamic_source_command(message: types.Message):
         await show_news_from_source(message, user_id, command)
     else:
         await message.answer("Неизвестная команда или источник новостей.")
-
-
 
 
 async def main():
