@@ -108,8 +108,10 @@ async def show_news(message, user_id):
 @dp.message(Command(commands=['news']))
 async def send_news(message: types.Message):
     user_id = message.from_user.id
-    user_states[user_id] = (0, None)  # Установка начальной позиции и источника новостей
-    await show_news(message, user_id)
+    if user_id not in user_states or user_states[user_id][1] is None:
+        await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
+    else:
+        await show_news(message, user_id)
 
 
 @dp.message(Command(commands=['more']))
