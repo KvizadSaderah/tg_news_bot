@@ -38,6 +38,31 @@ async def send_welcome(message: types.Message):
     )
 
 
+@dp.message(Command(commands=['source']))
+async def send_sources(message: types.Message):
+    RSS_URLS = load_rss_sources('rss_sources.json')
+    sources = "\n".join([f"/{source}" for source in RSS_URLS.keys()])
+    await message.answer("Доступные источники новостей:\n" + sources)
+
+async def show_news_from_source(message, user_id, source):
+    try:
+        start, source_key = user_states[user_id]
+        RSS_URLS = load_rss_sources('rss_sources.json')
+        news_items = get_all_news({source_key: RSS_URLS[source_key]})
+
+        if start >= len(news_items):
+            await message.answer("Больше новостей нет.")
+            user_states[user_id] = (0, source_key)  # Сброс позиции
+            return
+
+        end = min(start + 5, len(news_items))
+        for item in news_items[start:end]:
+            await message.answer(f"{item['title']}\n{item['link']}")
+
+        user_states[user_id] = (end, source_key)  # Обновление позиции
+    except Exception as e:
+        logger.exception(f"Ошибка при обработке команды /{source}: {e}")
+
 @dp.message(Command(commands=['news']))
 async def send_news(message: types.Message):
     user_id = message.from_user.id
@@ -49,9 +74,12 @@ async def send_news(message: types.Message):
 async def send_more_news(message: types.Message):
     user_id = message.from_user.id
     if user_id not in user_states:
-        await message.answer("Сначала введите команду /news.")
+        await message.answer("Сначала выберите источник новостей с помощью команды /имя_источника.")
         return
-    await show_news(message, user_id)
+
+    _, source = user_states[user_id]
+    await show_news_from_source(message, user_id, source)
+
 
 
 async def show_news(message, user_id):
