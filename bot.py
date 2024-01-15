@@ -41,43 +41,21 @@ async def send_welcome(message: types.Message):
 @dp.message(Command(commands=['source']))
 async def send_sources(message: types.Message):
     RSS_URLS = load_rss_sources('rss_sources.json')
-    sources = "\n".join([f"/{source}" for source in RSS_URLS.keys()])
+    sources = "\n".join([f"/source_{source}" for source in RSS_URLS.keys()])
     await message.answer("Доступные источники новостей:\n" + sources)
 
-async def show_news_from_source(message, user_id, source):
-    try:
-        start, source_key = user_states.get(user_id, (0, None))
-        if not source_key:
-            await message.answer("Сначала выберите источник новостей.")
-            return
 
-        RSS_URLS = load_rss_sources('rss_sources.json')
-        if source_key not in RSS_URLS:
-            await message.answer("Выбранный источник новостей не найден.")
-            return
-
-        # Продолжаем как раньше...
-    except Exception as e:
-        logger.exception(f"Ошибка при обработке команды /{source}: {e}")
-
-
-@dp.message(Command(commands=['news']))
-async def send_news(message: types.Message):
+@dp.message(Command(commands=['source_']))
+async def set_source(message: types.Message):
     user_id = message.from_user.id
-    user_states[user_id] = 0  # Начальная позиция для новых запросов новостей
-    await show_news(message, user_id)
+    source_key = message.get_command(pure=True).split('_')[1]
+    RSS_URLS = load_rss_sources('rss_sources.json')
 
-
-@dp.message(Command(commands=['more']))
-async def send_more_news(message: types.Message):
-    user_id = message.from_user.id
-    if user_id not in user_states:
-        await message.answer("Сначала выберите источник новостей с помощью команды /имя_источника.")
-        return
-
-    _, source = user_states[user_id]
-    await show_news_from_source(message, user_id, source)
-
+    if source_key in RSS_URLS:
+        user_states[user_id] = (0, source_key)  # Обновление источника и сброс позиции
+        await message.answer(f"Источник новостей изменен на {source_key}.")
+    else:
+        await message.answer("Такого источника новостей нет. Проверьте название.")
 
 
 async def show_news(message, user_id):
@@ -107,6 +85,22 @@ async def show_news(message, user_id):
     except Exception as e:
         logger.exception(f"Ошибка при обработке команды /news: {e}")
 
+
+@dp.message(Command(commands=['news']))
+async def send_news(message: types.Message):
+    user_id = message.from_user.id
+    user_states[user_id] = (0, None)  # Установка начальной позиции и источника новостей
+    await show_news(message, user_id)
+
+
+@dp.message(Command(commands=['more']))
+async def send_more_news(message: types.Message):
+    user_id = message.from_user.id
+    if user_id not in user_states or user_states[user_id][1] is None:
+        await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
+        return
+
+    await show_news(message, user_id)
 
 
 async def main():
