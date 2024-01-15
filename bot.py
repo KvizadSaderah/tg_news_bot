@@ -65,7 +65,25 @@ async def set_source(message: types.Message):
         logger.error(f"Error in set_source: {e}")
         await message.answer("Произошла ошибка при обработке команды.")
 
+@dp.message_handler(lambda message: message.text.startswith('/source_'))
+async def set_source_alternative(message: types.Message):
+    user_id = message.from_user.id
+    command_text = message.text
+    logger.info(f"Received command: {command_text}")  # Логируем полученную команду
 
+    try:
+        source_key = command_text.split('_')[1]  # Извлекаем ключ источника новостей
+        logger.info(f"Extracted source key: {source_key}")  # Логируем извлечённый ключ
+
+        RSS_URLS = load_rss_sources('rss_sources.json')
+        if source_key in RSS_URLS:
+            user_states[user_id] = (0, source_key)  # Обновление источника и сброс позиции
+            await message.answer(f"Источник новостей изменен на {source_key}.")
+        else:
+            await message.answer("Такого источника новостей нет. Проверьте название.")
+    except Exception as e:
+        logger.error(f"Error in set_source_alternative: {e}")
+await message.answer("Произошла ошибка при обработке команды.")
 
 
 async def show_news(message, user_id):
