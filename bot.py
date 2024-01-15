@@ -48,7 +48,7 @@ async def send_sources(message: types.Message):
 @dp.message(Command(commands=['source_']))
 async def set_source(message: types.Message):
     user_id = message.from_user.id
-    source_key = message.get_command(pure=True).split('_')[1]
+    source_key = message.get_command().split('_')[1]  # Извлекаем ключ источника новостей
     RSS_URLS = load_rss_sources('rss_sources.json')
 
     if source_key in RSS_URLS:
