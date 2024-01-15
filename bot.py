@@ -66,6 +66,7 @@ async def set_source(message: types.Message):
         await message.answer("Произошла ошибка при обработке команды.")
 
 @dp.message_handler(lambda message: message.text.startswith('/source_'))
+@dp.message_handler(lambda message: message.text.startswith('/source_'))
 async def set_source_alternative(message: types.Message):
     user_id = message.from_user.id
     command_text = message.text
@@ -83,7 +84,8 @@ async def set_source_alternative(message: types.Message):
             await message.answer("Такого источника новостей нет. Проверьте название.")
     except Exception as e:
         logger.error(f"Error in set_source_alternative: {e}")
-await message.answer("Произошла ошибка при обработке команды.")
+        await message.answer("Произошла ошибка при обработке команды.")
+
 
 
 async def show_news(message, user_id):
