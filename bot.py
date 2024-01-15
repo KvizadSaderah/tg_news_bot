@@ -48,7 +48,8 @@ async def send_sources(message: types.Message):
 @dp.message(Command(commands=['source_']))
 async def set_source(message: types.Message):
     user_id = message.from_user.id
-    source_key = message.get_command().split('_')[1]  # Извлекаем ключ источника новостей
+    command_text = message.text
+    source_key = command_text.split('_')[1]  # Извлекаем ключ источника новостей
     RSS_URLS = load_rss_sources('rss_sources.json')
 
     if source_key in RSS_URLS:
@@ -56,6 +57,7 @@ async def set_source(message: types.Message):
         await message.answer(f"Источник новостей изменен на {source_key}.")
     else:
         await message.answer("Такого источника новостей нет. Проверьте название.")
+
 
 
 async def show_news(message, user_id):
