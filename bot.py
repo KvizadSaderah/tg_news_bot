@@ -1,7 +1,6 @@
 import asyncio
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.dispatcher.filters import Text
+from aiogram.dispatcher.filters import Command
 from dotenv import load_dotenv
 import os
 from rss_parser import load_rss_sources, get_all_news
@@ -39,7 +38,7 @@ async def send_welcome(message: types.Message):
     )
 
 
-@dp.message(Command(commands=['source']))
+@dp.message_handler(commands=['source'])
 async def send_sources(message: types.Message):
     RSS_URLS = load_rss_sources('rss_sources.json')
     sources = "\n".join([f"/{source}" for source in RSS_URLS.keys()])
@@ -69,14 +68,14 @@ async def show_news_from_source(message, user_id, source_key):
         logger.exception(f"Ошибка при обработке команды /{source_key}: {e}")
 
 
-@dp.message(Command(commands=['news']))
+@dp.message_handler(commands=['news'])
 async def send_news(message: types.Message):
     user_id = message.from_user.id
     user_states[user_id] = 0  # Начальная позиция для новых запросов новостей
     await show_news(message, user_id)
 
 
-@dp.message(Command(commands=['more']))
+@dp.message_handler(commands=['more'])
 async def send_more_news(message: types.Message):
     user_id = message.from_user.id
     if user_id not in user_states:
@@ -112,25 +111,18 @@ async def show_news(message, user_id):
         logger.exception(f"Ошибка при обработке команды /news: {e}")
 
 
-@dp.message_handler(lambda message: message.text.startswith('/') and message.text[1:] in load_rss_sources('rss_sources.json').keys())
+@dp.message_handler(lambda message: message.text.startswith('/'))
 async def dynamic_source_command(message: types.Message):
-    user_id = message.from_user.id
-    source_key = message.text[1:]  # Удаление слеша и получение имени источника
-    user_states[user_id] = (0, source_key)  # Обновление состояния пользователя с новым источником
-    await show_news(message, user_id)
-
-@dp.message_handler(Text(startswith='/'))
-async def dynamic_source_command(message: types.Message):
-    command = message.text[1:]  # Удаляем начальный слеш
+    command = message.text[1:]  # Remove the starting '/'
     RSS_URLS = load_rss_sources('rss_sources.json')
 
-    # Проверяем, является ли команда именем источника
-    if command in RSS_URLS.keys():
+    if command in RSS_URLS:
         user_id = message.from_user.id
-        user_states[user_id] = (0, command)  # Обновляем состояние пользователя
+        user_states[user_id] = (0, command)  # Set initial state for this user and source
         await show_news_from_source(message, user_id, command)
     else:
-        await message.answer("Неизвестная команда.")
+        await message.answer("Неизвестная команда или источник новостей.")
+
 
 
 
