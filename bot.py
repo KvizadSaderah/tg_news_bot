@@ -1,5 +1,6 @@
 import asyncio
 from aiogram import Bot, Dispatcher, types, filters
+from aiogram.filters import Command
 from dotenv import load_dotenv
 import os
 from rss_parser import load_rss_sources, get_all_news
@@ -26,7 +27,7 @@ dp = Dispatcher()
 
 user_states = {}  # Словарь для хранения позиции каждого пользователя
 
-@dp.message_handler(commands=['start', 'help'])
+@dp.message(Command(commands=['start', 'help']))
 async def send_welcome(message: types.Message):
     logger.info("Обработка команды /start или /help")
     await message.answer(
@@ -35,7 +36,8 @@ async def send_welcome(message: types.Message):
         "Используйте команду /more для получения дополнительных новостей."
     )
 
-@dp.message_handler(commands=['source'])
+
+@dp.message(Command(commands=['source']))
 async def send_sources(message: types.Message):
     RSS_URLS = load_rss_sources('rss_sources.json')
     sources = "\n".join([f"/{source}" for source in RSS_URLS.keys()])
@@ -63,13 +65,13 @@ async def show_news_from_source(message, user_id, source_key):
     except Exception as e:
         logger.exception(f"Ошибка при обработке команды /{source_key}: {e}")
 
-@dp.message_handler(commands=['news'])
+@dp.message(Command(commands=['news']))
 async def send_news(message: types.Message):
     user_id = message.from_user.id
     user_states[user_id] = 0  # Начальная позиция для новых запросов новостей
     await show_news_from_source(message, user_id, 'Meduza')
 
-@dp.message_handler(commands=['more'])
+@dp.message(Command(commands=['more']))
 async def send_more_news(message: types.Message):
     user_id = message.from_user.id
     if user_id not in user_states:
