@@ -84,21 +84,35 @@ async def send_more_news(message: types.Message):
 
 async def show_news(message, user_id):
     try:
-        start = user_states[user_id]
+        start, source_key = user_states.get(user_id, (0, 'Meduza'))  # Значение по умолчанию
         RSS_URLS = load_rss_sources('rss_sources.json')
-        news_items = get_all_news(RSS_URLS)
+        if source_key not in RSS_URLS:
+            await message.answer("Источник новостей не найден.")
+            return
+
+        news_items = get_all_news({source_key: RSS_URLS[source_key]})
 
         if start >= len(news_items):
             await message.answer("Больше новостей нет.")
-            user_states[user_id] = 0  # Сброс позиции пользователя
+            user_states[user_id] = (0, source_key)  # Сброс позиции
             return
 
         end = min(start + 5, len(news_items))
         for item in news_items[start:end]:
             await message.answer(f"{item['title']}\n{item['link']}")
-        user_states[user_id] = end  # Обновление позиции пользователя
+
+        user_states[user_id] = (end, source_key)  # Обновление позиции
     except Exception as e:
-        logger.exception(f"Ошибка при обработке команды /news или /more: {e}")
+        logger.exception(f"Ошибка при обработке команды /news: {e}")
+
+
+@dp.message_handler(lambda message: message.text.startswith('/') and message.text[1:] in load_rss_sources('rss_sources.json').keys())
+async def dynamic_source_command(message: types.Message):
+    user_id = message.from_user.id
+    source_key = message.text[1:]  # Удаление слеша и получение имени источника
+    user_states[user_id] = (0, source_key)  # Обновление состояния пользователя с новым источником
+    await show_news(message, user_id)
+
 
 
 async def main():
