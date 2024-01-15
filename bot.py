@@ -38,39 +38,90 @@ async def send_welcome(message: types.Message):
     )
 
 
-@dp.message(Command(commands=['news']))
-async def send_news(message: types.Message):
-    user_id = message.from_user.id
-    user_states[user_id] = 0  # Начальная позиция для новых запросов новостей
-    await show_news(message, user_id)
+@dp.message(Command(commands=['source']))
+async def send_sources(message: types.Message):
+    RSS_URLS = load_rss_sources('rss_sources.json')
+    sources = "\n".join([f"/source_{source}" for source in RSS_URLS.keys()])
+    await message.answer("Доступные источники новостей:\n" + sources)
 
 
-@dp.message(Command(commands=['more']))
-async def send_more_news(message: types.Message):
+@dp.message(lambda message: message.text.startswith('/source_'))
+async def set_source(message: types.Message):
     user_id = message.from_user.id
-    if user_id not in user_states:
-        await message.answer("Сначала введите команду /news.")
-        return
-    await show_news(message, user_id)
+    command_text = message.text
+    logger.info(f"Received command: {command_text}")  # Логируем полученную команду
+
+    try:
+        # Определяем ключ источника новостей
+        source_key = command_text[len('/source_'):]
+        logger.info(f"Extracted source key: {source_key}")  # Логируем извлечённый ключ
+
+        # Загрузка списка источников RSS
+        RSS_URLS = load_rss_sources('rss_sources.json')
+        logger.info(f"Available RSS URLs: {RSS_URLS}")  # Логируем доступные URL источников
+
+        # Проверяем, существует ли такой источник
+        if source_key in RSS_URLS:
+            user_states[user_id] = (0, source_key)  # Устанавливаем выбранный источник
+            await message.answer(f"Источник новостей изменен на {source_key}.")
+        else:
+            await message.answer("Такого источника новостей нет. Проверьте название.")
+    except Exception as e:
+        logger.error(f"Error in set_source: {e}")
+        await message.answer("Произошла ошибка при обработке команды.")
+
+
+
+
+
+
 
 
 async def show_news(message, user_id):
     try:
-        start = user_states[user_id]
+        start, source_key = user_states.get(user_id, (0, None))
+        if not source_key:
+            await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
+            return
+
         RSS_URLS = load_rss_sources('rss_sources.json')
-        news_items = get_all_news(RSS_URLS)
+        if source_key not in RSS_URLS:
+            await message.answer("Выбранный источник новостей не найден.")
+            return
+
+        news_items = get_all_news({source_key: RSS_URLS[source_key]})
 
         if start >= len(news_items):
             await message.answer("Больше новостей нет.")
-            user_states[user_id] = 0  # Сброс позиции пользователя
+            user_states[user_id] = (0, source_key)  # Сброс позиции
             return
 
         end = min(start + 5, len(news_items))
         for item in news_items[start:end]:
             await message.answer(f"{item['title']}\n{item['link']}")
-        user_states[user_id] = end  # Обновление позиции пользователя
+
+        user_states[user_id] = (end, source_key)  # Обновление позиции
     except Exception as e:
-        logger.exception(f"Ошибка при обработке команды /news или /more: {e}")
+        logger.exception(f"Ошибка при обработке команды /news: {e}")
+
+
+@dp.message(Command(commands=['news']))
+async def send_news(message: types.Message):
+    user_id = message.from_user.id
+    if user_id not in user_states or user_states[user_id][1] is None:
+        await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
+    else:
+        await show_news(message, user_id)
+
+
+@dp.message(Command(commands=['more']))
+async def send_more_news(message: types.Message):
+    user_id = message.from_user.id
+    if user_id not in user_states or user_states[user_id][1] is None:
+        await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
+        return
+
+    await show_news(message, user_id)
 
 
 async def main():
