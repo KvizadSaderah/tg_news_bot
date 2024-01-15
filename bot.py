@@ -81,17 +81,18 @@ async def send_more_news(message: types.Message):
     _, source_key = user_states[user_id]
     await show_news_from_source(message, user_id, source_key)
 
-@dp.message_handler(filters.RegexpCommandsFilter(regexp_commands=[r'(\w+)']))
+@dp.message(Command(commands=['dynamic']))
 async def dynamic_source_command(message: types.Message):
-    command = message.text[1:]  # Remove the starting '/'
+    command = message.get_command()[1:]  # Получаем команду без начального '/'
     RSS_URLS = load_rss_sources('rss_sources.json')
 
     if command in RSS_URLS:
         user_id = message.from_user.id
-        user_states[user_id] = (0, command)  # Set initial state for this user and source
+        user_states[user_id] = (0, command)  # Устанавливаем начальное состояние для этого пользователя и источника
         await show_news_from_source(message, user_id, command)
     else:
         await message.answer("Неизвестная команда или источник новостей.")
+
 
 async def main():
     logger.info("Запуск бота")
