@@ -28,14 +28,19 @@ dp = Dispatcher()
 user_states = {}  # Словарь для хранения позиции каждого пользователя
 
 
-@dp.message(Command(commands=['start', 'help']))
-async def send_welcome(message: types.Message):
-    logger.info("Обработка команды /start или /help")
-    await message.answer(
-        "Привет! Я бот, который предоставляет новости. "
-        "Отправьте мне команду /news, чтобы получить последние новости. "
-        "Используйте команду /more для получения дополнительных новостей."
+@dp.message(Command(commands=['help']))
+async def send_help(message: types.Message):
+    logger.info("Обработка команды /help")
+    help_message = (
+        "Вот как вы можете использовать меня:\n"
+        "/start - Показать приветственное сообщение\n"
+        "/source - Показать список доступных источников новостей\n"
+        "/source_ИмяИсточника - Установить конкретный источник новостей\n"
+        "/news - Получить последние новости из выбранного источника\n"
+        "/more - Получить больше новостей из выбранного источника\n"
+        "Просто следуйте этим командам, чтобы начать читать новости!"
     )
+    await message.answer(help_message)
 
 
 @dp.message(Command(commands=['source']))
