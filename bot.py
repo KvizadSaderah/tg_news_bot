@@ -5,7 +5,6 @@ import os
 from rss_parser import load_rss_sources, get_all_news
 import logging
 
-
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,8 +26,7 @@ dp = Dispatcher()
 
 user_states = {}  # Словарь для хранения позиции каждого пользователя
 
-
-@dp.message(Command(commands=['start', 'help']))
+@dp.message_handler(commands=['start', 'help'])
 async def send_welcome(message: types.Message):
     logger.info("Обработка команды /start или /help")
     await message.answer(
@@ -36,7 +34,6 @@ async def send_welcome(message: types.Message):
         "Отправьте мне команду /news, чтобы получить последние новости. "
         "Используйте команду /more для получения дополнительных новостей."
     )
-
 
 @dp.message_handler(commands=['source'])
 async def send_sources(message: types.Message):
@@ -51,7 +48,6 @@ async def show_news_from_source(message, user_id, source_key):
         if source_key not in RSS_URLS:
             await message.answer(f"Источник '{source_key}' не найден.")
             return
-
         news_items = get_all_news({source_key: RSS_URLS[source_key]})
 
         if start >= len(news_items):
@@ -67,13 +63,11 @@ async def show_news_from_source(message, user_id, source_key):
     except Exception as e:
         logger.exception(f"Ошибка при обработке команды /{source_key}: {e}")
 
-
 @dp.message_handler(commands=['news'])
 async def send_news(message: types.Message):
     user_id = message.from_user.id
     user_states[user_id] = 0  # Начальная позиция для новых запросов новостей
-    await show_news(message, user_id)
-
+    await show_news_from_source(message, user_id, 'Meduza')
 
 @dp.message_handler(commands=['more'])
 async def send_more_news(message: types.Message):
@@ -84,32 +78,6 @@ async def send_more_news(message: types.Message):
 
     _, source = user_states[user_id]
     await show_news_from_source(message, user_id, source)
-
-
-
-async def show_news(message, user_id):
-    try:
-        start, source_key = user_states.get(user_id, (0, 'Meduza'))  # Значение по умолчанию
-        RSS_URLS = load_rss_sources('rss_sources.json')
-        if source_key not in RSS_URLS:
-            await message.answer("Источник новостей не найден.")
-            return
-
-        news_items = get_all_news({source_key: RSS_URLS[source_key]})
-
-        if start >= len(news_items):
-            await message.answer("Больше новостей нет.")
-            user_states[user_id] = (0, source_key)  # Сброс позиции
-            return
-
-        end = min(start + 5, len(news_items))
-        for item in news_items[start:end]:
-            await message.answer(f"{item['title']}\n{item['link']}")
-
-        user_states[user_id] = (end, source_key)  # Обновление позиции
-    except Exception as e:
-        logger.exception(f"Ошибка при обработке команды /news: {e}")
-
 
 @dp.message_handler(filters.RegexpCommandsFilter(regexp_commands=[r'(\w+)']))
 async def dynamic_source_command(message: types.Message):
@@ -123,14 +91,12 @@ async def dynamic_source_command(message: types.Message):
     else:
         await message.answer("Неизвестная команда или источник новостей.")
 
-
 async def main():
     logger.info("Запуск бота")
     try:
         await dp.start_polling(bot)
     except Exception as e:
         logger.exception(f"Ошибка при запуске бота: {e}")
-
 
 if __name__ == '__main__':
     asyncio.run(main())
