@@ -68,7 +68,7 @@ async def set_source(message: types.Message):
             await message.answer("Такого источника новостей нет. Проверьте название.")
     except Exception as e:
         logger.error(f"Error in set_source: {e}")
-		await message.answer("Произошла ошибка при обработке команды.")
+        await message.answer("Произошла ошибка при обработке команды.")
 
 
 
