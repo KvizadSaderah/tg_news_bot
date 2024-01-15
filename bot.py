@@ -57,6 +57,8 @@ async def set_source(message: types.Message):
         logger.info(f"Extracted source key: {source_key}")  # Логируем извлечённый ключ
 
         RSS_URLS = load_rss_sources('rss_sources.json')
+        logger.info(f"Available RSS URLs: {RSS_URLS}")  # Логируем доступные URL источников
+
         if source_key in RSS_URLS:
             user_states[user_id] = (0, source_key)  # Обновление источника и сброс позиции
             await message.answer(f"Источник новостей изменен на {source_key}.")
@@ -65,6 +67,7 @@ async def set_source(message: types.Message):
     except Exception as e:
         logger.error(f"Error in set_source: {e}")
         await message.answer("Произошла ошибка при обработке команды.")
+
 
 
 
