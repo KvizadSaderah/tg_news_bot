@@ -77,7 +77,6 @@ async def set_source(message: types.Message):
 
 
 
-
 async def show_news(message, user_id):
     try:
         start, source_key = user_states.get(user_id, (0, None))
