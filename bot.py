@@ -41,6 +41,22 @@ async def collect_data(message: types.Message):
     logger.info(f"Collecting data: {user_data}")
     await send_to_channel(user_data)
 
+@dp.message(Command(commands=['start']))
+async def send_start(message: types.Message):
+    logger.info("Обработка команды /start")
+    start_message = (
+        "Здравствуйте! Я умею показывать новости из выбранных RSS лент!"
+        "Вот как вы можете использовать меня:\n"
+        "/start - Показать приветственное сообщение\n"
+        "/source - Показать список доступных источников новостей\n"
+        "/source_ИмяИсточника - Установить конкретный источник новостей\n"
+        "/news - Получить последние новости из выбранного источника\n"
+        "/more - Получить больше новостей из выбранного источника\n"
+        "Просто следуйте этим командам, чтобы начать читать новости!"
+    )
+    await message.answer(start_message)
+    await collect_data(message)
+
 @dp.message(Command(commands=['help']))
 async def send_help(message: types.Message):
     logger.info("Обработка команды /help")
