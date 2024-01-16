@@ -1,6 +1,7 @@
 import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
+from aiogram import types
 from dotenv import load_dotenv
 import os
 from rss_parser import load_rss_sources, get_all_news
@@ -27,6 +28,9 @@ bot = Bot(token=API_TOKEN)
 
 # Создание диспетчера
 dp = Dispatcher()
+
+# Регистрация middleware
+dp.middleware.setup(data_collection_middleware)
 
 user_states = {}  # Словарь для хранения позиции каждого пользователя
 
@@ -139,6 +143,17 @@ async def send_to_channel(user_data):
     except Exception as e:
         logger.error(f"Ошибка при отправке сообщения в канал: {e}")
 
+
+async def data_collection_middleware(update, data, storage):
+    # Проверяем, что это сообщение
+    if isinstance(update, types.Message):
+        # Здесь логика сбора данных
+        user_data = f"User ID: {update.from_user.id}\nUsername: @{update.from_user.username}\nCommand: {update.text}\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        logger.info(f"Collecting data: {user_data}")
+        await send_to_channel(user_data)
+
+    # Вызов следующего обработчика в цепочке
+    await update.continue_propagation()
 
 @dp.message(lambda message: True)
 async def collect_data(message: types.Message):
