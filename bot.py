@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 # Загрузка конфигурации из .env файла
 load_dotenv()
 API_TOKEN = os.getenv('TELEGRAM_API_TOKEN')
+CHANNEL_ID = os.getenv('TELEGRAM_CHANNEL_ID')  # Загрузка ID канала из .env файла
+
 
 # Проверка, что токен API присутствует
 if not API_TOKEN:
