@@ -34,12 +34,10 @@ dp = Dispatcher()
 
 user_states = {}  # Словарь для хранения позиции каждого пользователя
 
+# Функция сбора данных
 async def collect_data(message: types.Message):
-    user_id = message.from_user.id
-    username = message.from_user.username
-    command_text = message.text
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    user_data = f"User ID: {user_id}\nUsername: @{username}\nCommand: {command_text}\nTime: {current_time}"
+    # Логика сбора данных
+    user_data = f"User ID: {message.from_user.id}\nUsername: @{message.from_user.username}\nCommand: {message.text}\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     logger.info(f"Collecting data: {user_data}")
     await send_to_channel(user_data)
 
@@ -56,6 +54,7 @@ async def send_help(message: types.Message):
         "Просто следуйте этим командам, чтобы начать читать новости!"
     )
     await message.answer(help_message)
+    await collect_data(message)
 
 
 @dp.message(Command(commands=['source']))
@@ -63,7 +62,7 @@ async def send_sources(message: types.Message):
     RSS_URLS = load_rss_sources('rss_sources.json')
     sources = "\n".join([f"/source_{source}" for source in RSS_URLS.keys()])
     await message.answer("Доступные источники новостей:\n" + sources)
-
+    await collect_data(message)
 
 
 @dp.message(lambda message: message.text.startswith('/source_'))
@@ -90,7 +89,7 @@ async def set_source(message: types.Message):
     except Exception as e:
         logger.error(f"Error in set_source: {e}")
         await message.answer("Произошла ошибка при обработке команды.")
-
+        await collect_data(message)
 
 
 async def show_news(message, user_id):
@@ -115,7 +114,7 @@ async def show_news(message, user_id):
         end = min(start + 5, len(news_items))
         for item in news_items[start:end]:
             await message.answer(f"{item['title']}\n{item['link']}")
-
+            await collect_data(message)
         user_states[user_id] = (end, source_key)  # Обновление позиции
     except Exception as e:
         logger.exception(f"Ошибка при обработке команды /news: {e}")
@@ -127,6 +126,7 @@ async def send_news(message: types.Message):
         await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
     else:
         await show_news(message, user_id)
+        await collect_data(message)
 
 
 @dp.message(Command(commands=['more']))
@@ -137,6 +137,7 @@ async def send_more_news(message: types.Message):
         return
 
     await show_news(message, user_id)
+    await collect_data(message)
 
 
 
