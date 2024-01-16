@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import os
 from rss_parser import load_rss_sources, get_all_news
 import logging
+from datetime import datetime
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +28,28 @@ dp = Dispatcher()
 
 user_states = {}  # Словарь для хранения позиции каждого пользователя
 
+
+# Функция для отправки данных в приватный канал
+async def send_to_channel(user_data):
+    try:
+        await bot.send_message(CHANNEL_ID, user_data)
+    except Exception as e:
+        logger.error(f"Ошибка при отправке сообщения в канал: {e}")
+
+
+# Обработчик любых сообщений для сбора данных
+@dp.message_handler()
+async def collect_data(message: types.Message):
+    user_id = message.from_user.id
+    username = message.from_user.username
+    command_text = message.text
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    user_data = f"User ID: {user_id}\nUsername: @{username}\nCommand: {command_text}\nTime: {current_time}"
+    logger.info(f"Collecting data: {user_data}")
+
+    # Отправляем собранную информацию в канал
+    await send_to_channel(user_data)
 
 @dp.message(Command(commands=['help']))
 async def send_help(message: types.Message):
