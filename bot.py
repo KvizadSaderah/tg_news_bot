@@ -38,7 +38,7 @@ async def send_to_channel(user_data):
 
 
 # Обработчик любых сообщений для сбора данных
-@dp.message_handler()
+@dp.message(lambda message: True)
 async def collect_data(message: types.Message):
     user_id = message.from_user.id
     username = message.from_user.username
