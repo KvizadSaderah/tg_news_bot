@@ -44,19 +44,31 @@ async def collect_data(message: types.Message):
 @dp.message(Command(commands=['start']))
 async def send_start(message: types.Message):
     logger.info("Обработка команды /start")
+    
+    # Создание кнопок
+    button_source = types.KeyboardButton(text='/source')
+    button_news = types.KeyboardButton(text='/news')
+    button_more = types.KeyboardButton(text='/more')
+    
+    # Создание клавиатуры и добавление кнопок в нее
+    keyboard = types.ReplyKeyboardMarkup(
+    keyboard=[[button_source, button_news, button_more]], 
+    resize_keyboard=True, 
+    one_time_keyboard=False
+    )
+
     start_message = (
         "Здравствуйте! Я умею показывать новости из выбранных RSS лент!\n"
         "-------------------\n"
         "Вот как вы можете использовать меня:\n"
-        "/start - Показать приветственное сообщение\n"
-        "/source - Показать список доступных источников новостей\n"
-        "/source_ИмяИсточника - Установить конкретный источник новостей\n"
-        "/news - Получить последние новости из выбранного источника\n"
-        "/more - Получить больше новостей из выбранного источника\n"
-        "Просто следуйте этим командам, чтобы начать читать новости!"
+        "Выберите команду из клавиатуры ниже:"
     )
-    await message.answer(start_message)
+    await message.answer(start_message, reply_markup=keyboard)
     await collect_data(message)
+
+
+
+
 
 @dp.message(Command(commands=['help']))
 async def send_help(message: types.Message):
@@ -195,5 +207,4 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-
 
