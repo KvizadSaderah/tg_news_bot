@@ -30,29 +30,6 @@ dp = Dispatcher()
 
 user_states = {}  # Словарь для хранения позиции каждого пользователя
 
-
-# Функция для отправки данных в приватный канал
-async def send_to_channel(user_data):
-    try:
-        await bot.send_message(CHANNEL_ID, user_data)
-    except Exception as e:
-        logger.error(f"Ошибка при отправке сообщения в канал: {e}")
-
-
-# Обработчик любых сообщений для сбора данных
-@dp.message(lambda message: True)
-async def collect_data(message: types.Message):
-    user_id = message.from_user.id
-    username = message.from_user.username
-    command_text = message.text
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    user_data = f"User ID: {user_id}\nUsername: @{username}\nCommand: {command_text}\nTime: {current_time}"
-    logger.info(f"Collecting data: {user_data}")
-
-    # Отправляем собранную информацию в канал
-    await send_to_channel(user_data)
-
 @dp.message(Command(commands=['help']))
 async def send_help(message: types.Message):
     logger.info("Обработка команды /help")
@@ -73,6 +50,7 @@ async def send_sources(message: types.Message):
     RSS_URLS = load_rss_sources('rss_sources.json')
     sources = "\n".join([f"/source_{source}" for source in RSS_URLS.keys()])
     await message.answer("Доступные источники новостей:\n" + sources)
+
 
 
 @dp.message(lambda message: message.text.startswith('/source_'))
@@ -99,11 +77,6 @@ async def set_source(message: types.Message):
     except Exception as e:
         logger.error(f"Error in set_source: {e}")
         await message.answer("Произошла ошибка при обработке команды.")
-
-
-
-
-
 
 
 
@@ -134,7 +107,6 @@ async def show_news(message, user_id):
     except Exception as e:
         logger.exception(f"Ошибка при обработке команды /news: {e}")
 
-
 @dp.message(Command(commands=['news']))
 async def send_news(message: types.Message):
     user_id = message.from_user.id
@@ -152,6 +124,33 @@ async def send_more_news(message: types.Message):
         return
 
     await show_news(message, user_id)
+
+
+
+
+# Обработчик любых сообщений для сбора данных
+@dp.message(lambda message: True)
+async def collect_data(message: types.Message):
+    user_id = message.from_user.id
+    username = message.from_user.username
+    command_text = message.text
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    user_data = f"User ID: {user_id}\nUsername: @{username}\nCommand: {command_text}\nTime: {current_time}"
+    logger.info(f"Collecting data: {user_data}")
+
+    # Отправляем собранную информацию в канал
+    await send_to_channel(user_data)
+
+
+# Функция для отправки данных в приватный канал
+async def send_to_channel(user_data):
+    try:
+        await bot.send_message(CHANNEL_ID, user_data)
+    except Exception as e:
+        logger.error(f"Ошибка при отправке сообщения в канал: {e}")
+
+
 
 
 async def main():
