@@ -165,17 +165,10 @@ async def send_to_channel(user_data):
     # Вызов следующего обработчика в цепочке
 #    await update.continue_propagation()
 
-@dp.message(lambda message: True)
 async def collect_data(message: types.Message):
-    user_id = message.from_user.id
-    username = message.from_user.username
-    command_text = message.text
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    user_data = f"User ID: {user_id}\nUsername: @{username}\nCommand: {command_text}\nTime: {current_time}"
+    # Логика сбора данных
+    user_data = f"User ID: {message.from_user.id}\nUsername: @{message.from_user.username}\nCommand: {message.text}\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     logger.info(f"Collecting data: {user_data}")
-
-    # Отправляем собранную информацию в канал
     await send_to_channel(user_data)
 
 async def main():
