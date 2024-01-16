@@ -129,6 +129,17 @@ async def send_more_news(message: types.Message):
 
 
 # Обработчик любых сообщений для сбора данных
+
+
+
+# Функция для отправки данных в приватный канал
+async def send_to_channel(user_data):
+    try:
+        await bot.send_message(CHANNEL_ID, user_data)
+    except Exception as e:
+        logger.error(f"Ошибка при отправке сообщения в канал: {e}")
+
+
 @dp.message(lambda message: True)
 async def collect_data(message: types.Message):
     user_id = message.from_user.id
@@ -141,17 +152,6 @@ async def collect_data(message: types.Message):
 
     # Отправляем собранную информацию в канал
     await send_to_channel(user_data)
-
-
-# Функция для отправки данных в приватный канал
-async def send_to_channel(user_data):
-    try:
-        await bot.send_message(CHANNEL_ID, user_data)
-    except Exception as e:
-        logger.error(f"Ошибка при отправке сообщения в канал: {e}")
-
-
-
 
 async def main():
     logger.info("Запуск бота")
