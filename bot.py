@@ -1,6 +1,7 @@
 import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
+from aiogram import types
 from dotenv import load_dotenv
 import os
 from rss_parser import load_rss_sources, get_all_news
@@ -28,7 +29,34 @@ bot = Bot(token=API_TOKEN)
 # Создание диспетчера
 dp = Dispatcher()
 
+# Регистрация middleware
+#dp.middleware.setup(data_collection_middleware)
+
 user_states = {}  # Словарь для хранения позиции каждого пользователя
+
+# Функция сбора данных
+async def collect_data(message: types.Message):
+    # Логика сбора данных
+    user_data = f"User ID: {message.from_user.id}\nUsername: @{message.from_user.username}\nCommand: {message.text}\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    logger.info(f"Collecting data: {user_data}")
+    await send_to_channel(user_data)
+
+@dp.message(Command(commands=['start']))
+async def send_start(message: types.Message):
+    logger.info("Обработка команды /start")
+    start_message = (
+        "Здравствуйте! Я умею показывать новости из выбранных RSS лент!\n"
+        "-------------------\n"
+        "Вот как вы можете использовать меня:\n"
+        "/start - Показать приветственное сообщение\n"
+        "/source - Показать список доступных источников новостей\n"
+        "/source_ИмяИсточника - Установить конкретный источник новостей\n"
+        "/news - Получить последние новости из выбранного источника\n"
+        "/more - Получить больше новостей из выбранного источника\n"
+        "Просто следуйте этим командам, чтобы начать читать новости!"
+    )
+    await message.answer(start_message)
+    await collect_data(message)
 
 @dp.message(Command(commands=['help']))
 async def send_help(message: types.Message):
@@ -43,6 +71,7 @@ async def send_help(message: types.Message):
         "Просто следуйте этим командам, чтобы начать читать новости!"
     )
     await message.answer(help_message)
+    await collect_data(message)
 
 
 @dp.message(Command(commands=['source']))
@@ -50,7 +79,7 @@ async def send_sources(message: types.Message):
     RSS_URLS = load_rss_sources('rss_sources.json')
     sources = "\n".join([f"/source_{source}" for source in RSS_URLS.keys()])
     await message.answer("Доступные источники новостей:\n" + sources)
-
+    await collect_data(message)
 
 
 @dp.message(lambda message: message.text.startswith('/source_'))
@@ -72,12 +101,15 @@ async def set_source(message: types.Message):
         if source_key in RSS_URLS:
             user_states[user_id] = (0, source_key)  # Устанавливаем выбранный источник
             await message.answer(f"Источник новостей изменен на {source_key}.")
+            await message.answer(f"Теперь можно приступить к чтению, нажмите сюда - /news")
+            await collect_data(message)
         else:
             await message.answer("Такого источника новостей нет. Проверьте название.")
+            await collect_data(message)
     except Exception as e:
         logger.error(f"Error in set_source: {e}")
         await message.answer("Произошла ошибка при обработке команды.")
-
+        await collect_data(message)
 
 
 async def show_news(message, user_id):
@@ -85,24 +117,27 @@ async def show_news(message, user_id):
         start, source_key = user_states.get(user_id, (0, None))
         if not source_key:
             await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
+            await collect_data(message)
             return
 
         RSS_URLS = load_rss_sources('rss_sources.json')
         if source_key not in RSS_URLS:
             await message.answer("Выбранный источник новостей не найден.")
+            await collect_data(message)
             return
 
         news_items = get_all_news({source_key: RSS_URLS[source_key]})
 
         if start >= len(news_items):
             await message.answer("Больше новостей нет.")
+            await collect_data(message)
             user_states[user_id] = (0, source_key)  # Сброс позиции
             return
 
         end = min(start + 5, len(news_items))
         for item in news_items[start:end]:
             await message.answer(f"{item['title']}\n{item['link']}")
-
+            await collect_data(message)
         user_states[user_id] = (end, source_key)  # Обновление позиции
     except Exception as e:
         logger.exception(f"Ошибка при обработке команды /news: {e}")
@@ -112,8 +147,10 @@ async def send_news(message: types.Message):
     user_id = message.from_user.id
     if user_id not in user_states or user_states[user_id][1] is None:
         await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
+        await collect_data(message)
     else:
         await show_news(message, user_id)
+        await collect_data(message)
 
 
 @dp.message(Command(commands=['more']))
@@ -121,14 +158,13 @@ async def send_more_news(message: types.Message):
     user_id = message.from_user.id
     if user_id not in user_states or user_states[user_id][1] is None:
         await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
+        await collect_data(message)
         return
 
     await show_news(message, user_id)
+    await collect_data(message)
 
 
-
-
-# Обработчик любых сообщений для сбора данных
 
 
 
@@ -140,26 +176,24 @@ async def send_to_channel(user_data):
         logger.error(f"Ошибка при отправке сообщения в канал: {e}")
 
 
-@dp.message(lambda message: True)
+
+
 async def collect_data(message: types.Message):
-    user_id = message.from_user.id
-    username = message.from_user.username
-    command_text = message.text
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    user_data = f"User ID: {user_id}\nUsername: @{username}\nCommand: {command_text}\nTime: {current_time}"
+    # Логика сбора данных
+    user_data = f"User ID: {message.from_user.id}\nUsername: @{message.from_user.username}\nCommand: {message.text}\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     logger.info(f"Collecting data: {user_data}")
-
-    # Отправляем собранную информацию в канал
     await send_to_channel(user_data)
 
 async def main():
     logger.info("Запуск бота")
     try:
         await dp.start_polling(bot)
+        await collect_data(message)
     except Exception as e:
         logger.exception(f"Ошибка при запуске бота: {e}")
 
 
 if __name__ == '__main__':
     asyncio.run(main())
+
+
