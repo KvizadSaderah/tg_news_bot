@@ -84,8 +84,10 @@ async def set_source(message: types.Message):
         if source_key in RSS_URLS:
             user_states[user_id] = (0, source_key)  # Устанавливаем выбранный источник
             await message.answer(f"Источник новостей изменен на {source_key}.")
+            await collect_data(message)
         else:
             await message.answer("Такого источника новостей нет. Проверьте название.")
+            await collect_data(message)
     except Exception as e:
         logger.error(f"Error in set_source: {e}")
         await message.answer("Произошла ошибка при обработке команды.")
@@ -97,17 +99,20 @@ async def show_news(message, user_id):
         start, source_key = user_states.get(user_id, (0, None))
         if not source_key:
             await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
+            await collect_data(message)
             return
 
         RSS_URLS = load_rss_sources('rss_sources.json')
         if source_key not in RSS_URLS:
             await message.answer("Выбранный источник новостей не найден.")
+            await collect_data(message)
             return
 
         news_items = get_all_news({source_key: RSS_URLS[source_key]})
 
         if start >= len(news_items):
             await message.answer("Больше новостей нет.")
+            await collect_data(message)
             user_states[user_id] = (0, source_key)  # Сброс позиции
             return
 
@@ -124,6 +129,7 @@ async def send_news(message: types.Message):
     user_id = message.from_user.id
     if user_id not in user_states or user_states[user_id][1] is None:
         await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
+        await collect_data(message)
     else:
         await show_news(message, user_id)
         await collect_data(message)
@@ -134,15 +140,13 @@ async def send_more_news(message: types.Message):
     user_id = message.from_user.id
     if user_id not in user_states or user_states[user_id][1] is None:
         await message.answer("Сначала выберите источник новостей с помощью команды /source_name.")
+        await collect_data(message)
         return
 
     await show_news(message, user_id)
     await collect_data(message)
 
 
-
-
-# Обработчик любых сообщений для сбора данных
 
 
 
@@ -154,16 +158,7 @@ async def send_to_channel(user_data):
         logger.error(f"Ошибка при отправке сообщения в канал: {e}")
 
 
-#async def data_collection_middleware(update, data, storage):
-#    # Проверяем, что это сообщение
-#    if isinstance(update, types.Message):
-#        # Здесь логика сбора данных
-#        user_data = f"User ID: {update.from_user.id}\nUsername: @{update.from_user.username}\nCommand: {update.text}\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-#        logger.info(f"Collecting data: {user_data}")
-#        await send_to_channel(user_data)
 
-    # Вызов следующего обработчика в цепочке
-#    await update.continue_propagation()
 
 async def collect_data(message: types.Message):
     # Логика сбора данных
@@ -175,9 +170,11 @@ async def main():
     logger.info("Запуск бота")
     try:
         await dp.start_polling(bot)
+        await collect_data(message)
     except Exception as e:
         logger.exception(f"Ошибка при запуске бота: {e}")
 
 
 if __name__ == '__main__':
     asyncio.run(main())
+
