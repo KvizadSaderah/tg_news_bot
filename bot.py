@@ -17,7 +17,6 @@ load_dotenv()
 API_TOKEN = os.getenv('TELEGRAM_API_TOKEN')
 CHANNEL_ID = os.getenv('TELEGRAM_CHANNEL_ID')  # Загрузка ID канала из .env файла
 
-
 # Проверка, что токен API присутствует
 if not API_TOKEN:
     logger.error("Токен API не найден. Проверьте ваш .env файл.")
@@ -30,9 +29,10 @@ bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
 # Регистрация middleware
-#dp.middleware.setup(data_collection_middleware)
+# dp.middleware.setup(data_collection_middleware)
 
 user_states = {}  # Словарь для хранения позиции каждого пользователя
+
 
 # Функция сбора данных
 async def collect_data(message: types.Message, send_notification=True):
@@ -42,20 +42,21 @@ async def collect_data(message: types.Message, send_notification=True):
     if send_notification:
         await send_to_channel(user_data)
 
+
 @dp.message(Command(commands=['start']))
 async def send_start(message: types.Message):
     logger.info("Обработка команды /start")
-    
+
     # Создание кнопок
-    button_source = types.KeyboardButton(text='Источники')
-    button_news = types.KeyboardButton(text='Новости')
-    button_more = types.KeyboardButton(text='Продолжить')
-    
+    button_source = types.KeyboardButton(text='/source - Источник')
+    button_news = types.KeyboardButton(text='/news - Новости')
+    button_more = types.KeyboardButton(text='/more - Продолжить')
+
     # Создание клавиатуры и добавление кнопок в нее
     keyboard = types.ReplyKeyboardMarkup(
-    keyboard=[[button_source, button_news, button_more]], 
-    resize_keyboard=True, 
-    one_time_keyboard=False
+        keyboard=[[button_source, button_news, button_more]],
+        resize_keyboard=True,
+        one_time_keyboard=False
     )
 
     start_message = (
@@ -66,9 +67,6 @@ async def send_start(message: types.Message):
     )
     await message.answer(start_message, reply_markup=keyboard)
     await collect_data(message)
-
-
-
 
 
 @dp.message(Command(commands=['help']))
@@ -155,6 +153,7 @@ async def show_news(message, user_id):
     except Exception as e:
         logger.exception(f"Ошибка при обработке команды /news: {e}")
 
+
 @dp.message(Command(commands=['news']))
 async def send_news(message: types.Message):
     user_id = message.from_user.id
@@ -178,9 +177,6 @@ async def send_more_news(message: types.Message):
     await collect_data(message)
 
 
-
-
-
 # Функция для отправки данных в приватный канал
 async def send_to_channel(user_data):
     try:
@@ -189,13 +185,12 @@ async def send_to_channel(user_data):
         logger.error(f"Ошибка при отправке сообщения в канал: {e}")
 
 
-
-
 async def collect_data(message: types.Message):
     # Логика сбора данных
     user_data = f"User ID: {message.from_user.id}\nUsername: @{message.from_user.username}\nCommand: {message.text}\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     logger.info(f"Collecting data: {user_data}")
     await send_to_channel(user_data)
+
 
 async def main():
     logger.info("Запуск бота")
@@ -208,4 +203,3 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-
