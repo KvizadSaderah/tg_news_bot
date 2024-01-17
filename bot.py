@@ -47,9 +47,9 @@ async def send_start(message: types.Message):
     logger.info("Обработка команды /start")
     
     # Создание кнопок
-    button_source = types.KeyboardButton(text='/source')
-    button_news = types.KeyboardButton(text='/news')
-    button_more = types.KeyboardButton(text='/more')
+    button_source = types.KeyboardButton(text='Источники')
+    button_news = types.KeyboardButton(text='Новости')
+    button_more = types.KeyboardButton(text='Продолжить')
     
     # Создание клавиатуры и добавление кнопок в нее
     keyboard = types.ReplyKeyboardMarkup(
