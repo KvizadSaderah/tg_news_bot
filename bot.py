@@ -35,11 +35,12 @@ dp = Dispatcher()
 user_states = {}  # Словарь для хранения позиции каждого пользователя
 
 # Функция сбора данных
-async def collect_data(message: types.Message):
+async def collect_data(message: types.Message, send_notification=True):
     # Логика сбора данных
     user_data = f"User ID: {message.from_user.id}\nUsername: @{message.from_user.username}\nCommand: {message.text}\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     logger.info(f"Collecting data: {user_data}")
-    await send_to_channel(user_data)
+    if send_notification:
+        await send_to_channel(user_data)
 
 @dp.message(Command(commands=['start']))
 async def send_start(message: types.Message):
@@ -149,7 +150,7 @@ async def show_news(message, user_id):
         end = min(start + 5, len(news_items))
         for item in news_items[start:end]:
             await message.answer(f"{item['title']}\n{item['link']}")
-            await collect_data(message)
+            await collect_data(message, send_notification=False)
         user_states[user_id] = (end, source_key)  # Обновление позиции
     except Exception as e:
         logger.exception(f"Ошибка при обработке команды /news: {e}")
