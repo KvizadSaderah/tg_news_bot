@@ -185,11 +185,7 @@ async def send_to_channel(user_data):
         logger.error(f"Ошибка при отправке сообщения в канал: {e}")
 
 
-async def collect_data(message: types.Message):
-    # Логика сбора данных
-    user_data = f"User ID: {message.from_user.id}\nUsername: @{message.from_user.username}\nCommand: {message.text}\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-    logger.info(f"Collecting data: {user_data}")
-    await send_to_channel(user_data)
+
 
 
 async def main():
